@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -261,7 +262,15 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	if v != nil {
 		// Open a NewDecoder and defer closing the reader only if there is a provided interface to decode to
 		defer httpResp.Body.Close()
-		err = json.NewDecoder(httpResp.Body).Decode(v)
+		buf, err := ioutil.ReadAll(httpResp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(buf, v)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("fail to decode %s", string(buf)))
+		}
 	}
 
 	resp := newResponse(httpResp, v)
